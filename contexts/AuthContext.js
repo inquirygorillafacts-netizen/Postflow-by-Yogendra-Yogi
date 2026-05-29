@@ -7,6 +7,9 @@ import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 const AuthContext = createContext({});
 
+
+
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
@@ -20,7 +23,7 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser);
       if (currentUser) {
         const savedWorkspace = localStorage.getItem('rdmodels_activeWorkspace');
-        
+
         // Fetch extended user data from Firestore in real-time
         userDocUnsub = onSnapshot(doc(db, "users", currentUser.uid), (userDoc) => {
           if (userDoc.exists()) {
