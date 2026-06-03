@@ -38,6 +38,58 @@ export default function BulkEditPage() {
   
   const [logoUrl, setLogoUrl] = useState("/logo.png");
 
+  // Track exact crop box size using DOM observer
+  const containerRef = useRef(null);
+  const [cropBoxRect, setCropBoxRect] = useState(null);
+
+  useEffect(() => {
+    let observer;
+    let timeout;
+
+    const initObserver = () => {
+      const cropArea = document.querySelector('.reactEasyCrop_CropArea');
+      if (cropArea && containerRef.current) {
+        observer = new ResizeObserver(() => {
+          const containerRect = containerRef.current.getBoundingClientRect();
+          const cropRect = cropArea.getBoundingClientRect();
+          
+          setCropBoxRect({
+            width: cropRect.width,
+            height: cropRect.height,
+            left: cropRect.left - containerRect.left + (cropRect.width / 2),
+            top: cropRect.top - containerRect.top + (cropRect.height / 2),
+          });
+        });
+        observer.observe(cropArea);
+        observer.observe(containerRef.current);
+      } else {
+        timeout = setTimeout(initObserver, 100);
+      }
+    };
+
+    initObserver();
+
+    return () => {
+      if (observer) observer.disconnect();
+      clearTimeout(timeout);
+    };
+  }, [currentIndex, queuedImages[currentIndex]?.aspect, queuedImages[currentIndex]?.naturalAspect]);
+
+  const getCropBoxStyle = () => {
+    if (!cropBoxRect) return { display: 'none' };
+    
+    return {
+      width: `${cropBoxRect.width}px`,
+      height: `${cropBoxRect.height}px`,
+      position: 'absolute',
+      left: `${cropBoxRect.left}px`,
+      top: `${cropBoxRect.top}px`,
+      transform: 'translate(-50%, -50%)',
+      zIndex: 10,
+      pointerEvents: 'none'
+    };
+  };
+
   // Processing State
   const { isProcessing, startProcessing } = useProcessing();
   const [gallery, setGallery] = useState([]);
@@ -525,7 +577,7 @@ export default function BulkEditPage() {
               </div>
 
               {/* EDITOR CROPPER AREA */}
-              <div className="flex-1 bg-black/5 relative overflow-hidden flex items-center justify-center">
+              <div ref={containerRef} className="flex-1 bg-black/5 relative overflow-hidden flex items-center justify-center">
                 {currentImage && (
                   <>
                     <Cropper
@@ -550,13 +602,10 @@ export default function BulkEditPage() {
                       style={{ containerStyle: { borderRadius: '0' } }}
                     />
 
-                    {currentImage.logos && currentImage.logos.map((logo, index) => (
-                      <div 
-                        key={logo.id}
-                        className="absolute inset-0 z-10"
-                        style={{ pointerEvents: 'none' }}
-                      >
+                    <div style={getCropBoxStyle()}>
+                      {currentImage.logos && currentImage.logos.map((logo, index) => (
                         <div 
+                          key={logo.id || index}
                           className="absolute select-none cursor-grab active:cursor-grabbing"
                           style={{
                             left: `${logo.position.x}%`,
@@ -625,15 +674,15 @@ export default function BulkEditPage() {
                         >
                           <img 
                             src={logo.url} 
-                            alt={`Watermark Logo ${index + 1}`} 
-                            className="w-full h-auto object-contain drop-shadow-md select-none pointer-events-none" 
+                            alt="logo preview" 
+                            className="w-full h-auto object-contain pointer-events-none"
                             draggable={false}
                           />
                           {/* Drag hint ring */}
                           <div className="absolute inset-0 rounded border-2 border-dashed border-white/0 hover:border-white/60 transition-colors duration-150" />
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </>
                 )}
               </div>
