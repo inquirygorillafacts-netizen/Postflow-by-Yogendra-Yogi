@@ -238,54 +238,45 @@ export default function DashboardLayout({ children }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: "spring", duration: 0.6, bounce: 0.3 }}
-              className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl relative my-8 overflow-hidden z-10 border border-white/50"
+              className="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl relative my-8 overflow-hidden z-10 border border-white/50"
             >
               {/* Decorative Background Gradient */}
               <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-10 blur-3xl pointer-events-none" />
               
-              <div className="p-8 md:p-10 relative">
-                <div className="flex flex-col items-center text-center mb-10">
+              <div className="p-6 md:p-8 relative">
+                <div className="flex flex-col items-center text-center mb-8">
                   <motion.div 
                     initial={{ rotate: -10, scale: 0.8 }}
                     animate={{ rotate: 0, scale: 1 }}
                     transition={{ type: "spring", delay: 0.2 }}
-                    className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-3xl text-white shadow-xl shadow-indigo-500/30 mb-6"
+                    className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-2xl text-white shadow-xl shadow-indigo-500/30 mb-4"
                   >
-                    <Sparkles className="w-10 h-10" />
+                    <Sparkles className="w-8 h-8" />
                   </motion.div>
-                  <h3 className="text-4xl font-black text-slate-900 tracking-tight mb-3">
+                  <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-2">
                     What's New in PostFlow
                   </h3>
-                  <p className="text-lg text-slate-500 font-medium max-w-md mx-auto">
+                  <p className="text-base text-slate-500 font-medium max-w-md mx-auto">
                     We've crafted some powerful new features to make your workflow even smoother.
                   </p>
                 </div>
 
-                <div className="space-y-6 mb-10">
+                <div className="grid md:grid-cols-2 gap-4 mb-8">
                   {/* Feature 1: Download ZIP */}
                   <motion.div 
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3, type: "spring" }}
-                    className="group relative bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(99,102,241,0.1)] hover:border-indigo-100 transition-all duration-300"
+                    className="group relative bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(99,102,241,0.1)] hover:border-indigo-100 hover:-translate-y-1 transition-all duration-300"
                   >
-                    <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500 to-purple-500 rounded-l-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="flex gap-5">
-                      <div className="bg-indigo-50 p-3 rounded-2xl h-fit shrink-0">
-                        <CheckCircle2 className="w-7 h-7 text-indigo-600" />
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500 to-purple-500 rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex gap-4 items-start">
+                      <div className="bg-indigo-50 p-2.5 rounded-xl shrink-0 mt-1">
+                        <CheckCircle2 className="w-5 h-5 text-indigo-600" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-900 text-xl tracking-tight mb-4">Download ZIP in Library</h4>
-                        <div className="space-y-4">
-                          <div>
-                            <span className="text-xs font-black text-indigo-500 uppercase tracking-wider mb-1.5 block">The Problem</span>
-                            <p className="text-sm text-slate-600 leading-relaxed font-medium">Downloading files one by one into folders takes a lot of time and can be tedious.</p>
-                          </div>
-                          <div>
-                            <span className="text-xs font-black text-emerald-500 uppercase tracking-wider mb-1.5 block">The Solution</span>
-                            <p className="text-sm text-slate-600 leading-relaxed font-medium">Select multiple photos and click <b>"Download ZIP"</b>. It will ask for a folder name. The downloaded ZIP file and the folder inside it will both have this name, keeping your gallery perfectly organized in one click!</p>
-                          </div>
-                        </div>
+                        <h4 className="font-bold text-slate-900 text-lg mb-2">Download ZIP in Library</h4>
+                        <p className="text-sm text-slate-600 leading-relaxed font-medium">Select multiple photos and click <b>"Download ZIP"</b>. It automatically places them in a named folder inside the ZIP, keeping your gallery perfectly organized in one click!</p>
                       </div>
                     </div>
                   </motion.div>
@@ -295,25 +286,16 @@ export default function DashboardLayout({ children }) {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4, type: "spring" }}
-                    className="group relative bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(217,70,239,0.1)] hover:border-fuchsia-100 transition-all duration-300"
+                    className="group relative bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(217,70,239,0.1)] hover:border-fuchsia-100 hover:-translate-y-1 transition-all duration-300"
                   >
-                    <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-purple-500 to-pink-500 rounded-l-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="flex gap-5">
-                      <div className="bg-fuchsia-50 p-3 rounded-2xl h-fit shrink-0">
-                        <CheckCircle2 className="w-7 h-7 text-fuchsia-600" />
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-purple-500 to-pink-500 rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex gap-4 items-start">
+                      <div className="bg-fuchsia-50 p-2.5 rounded-xl shrink-0 mt-1">
+                        <CheckCircle2 className="w-5 h-5 text-fuchsia-600" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-900 text-xl tracking-tight mb-4">Granular "Apply to All"</h4>
-                        <div className="space-y-4">
-                          <div>
-                            <span className="text-xs font-black text-fuchsia-500 uppercase tracking-wider mb-1.5 block">The Problem</span>
-                            <p className="text-sm text-slate-600 leading-relaxed font-medium">Previously, applying a logo would also apply its position and size to everything, ruining your individual adjustments.</p>
-                          </div>
-                          <div>
-                            <span className="text-xs font-black text-pink-500 uppercase tracking-wider mb-1.5 block">The Solution</span>
-                            <p className="text-sm text-slate-600 leading-relaxed font-medium">You now have laser-focused control! Separate buttons let you apply <b>only</b> the Aspect Ratio, <b>only</b> the Logo, or <b>only</b> the Logo Settings independently across all photos.</p>
-                          </div>
-                        </div>
+                        <h4 className="font-bold text-slate-900 text-lg mb-2">Granular "Apply to All"</h4>
+                        <p className="text-sm text-slate-600 leading-relaxed font-medium">You now have laser-focused control! Separate buttons let you apply <b>only</b> the Aspect Ratio, <b>only</b> the Logo, or <b>only</b> the Logo Settings independently across all photos.</p>
                       </div>
                     </div>
                   </motion.div>
@@ -323,25 +305,35 @@ export default function DashboardLayout({ children }) {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5, type: "spring" }}
-                    className="group relative bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(34,197,94,0.1)] hover:border-green-100 transition-all duration-300"
+                    className="group relative bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(34,197,94,0.1)] hover:border-green-100 hover:-translate-y-1 transition-all duration-300"
                   >
-                    <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-green-400 to-emerald-600 rounded-l-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="flex gap-5">
-                      <div className="bg-green-50 p-3 rounded-2xl h-fit shrink-0">
-                        <CheckCircle2 className="w-7 h-7 text-green-600" />
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-green-400 to-emerald-600 rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex gap-4 items-start">
+                      <div className="bg-green-50 p-2.5 rounded-xl shrink-0 mt-1">
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-900 text-xl tracking-tight mb-4">Native WhatsApp Share</h4>
-                        <div className="space-y-4">
-                          <div>
-                            <span className="text-xs font-black text-green-600 uppercase tracking-wider mb-1.5 block">The Problem</span>
-                            <p className="text-sm text-slate-600 leading-relaxed font-medium">Downloading a ZIP, extracting it, and then manually attaching 50 photos to WhatsApp is exhausting.</p>
-                          </div>
-                          <div>
-                            <span className="text-xs font-black text-emerald-600 uppercase tracking-wider mb-1.5 block">The Solution</span>
-                            <p className="text-sm text-slate-600 leading-relaxed font-medium">Just select your photos in the Library and click <b>"Send WhatsApp"</b>. It natively opens your device's share menu, letting you instantly send all selected photos directly to any WhatsApp chat!</p>
-                          </div>
-                        </div>
+                        <h4 className="font-bold text-slate-900 text-lg mb-2">Native WhatsApp Share</h4>
+                        <p className="text-sm text-slate-600 leading-relaxed font-medium">Select your photos in the Library and click <b>"Send WhatsApp"</b>. It natively opens your device's share menu to instantly send all photos directly to any chat!</p>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Feature 4: Multiple Logos & Scroll Shortcuts */}
+                  <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6, type: "spring" }}
+                    className="group relative bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(249,115,22,0.1)] hover:border-orange-100 hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-orange-400 to-red-500 rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex gap-4 items-start">
+                      <div className="bg-orange-50 p-2.5 rounded-xl shrink-0 mt-1">
+                        <CheckCircle2 className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-lg mb-2">Multiple Logos & Fast Scroll</h4>
+                        <p className="text-sm text-slate-600 leading-relaxed font-medium">Add multiple logos to a single image! Hover over any logo and use <b>Scroll</b> to zoom or <b>Ctrl + Scroll</b> to adjust opacity directly from the preview.</p>
                       </div>
                     </div>
                   </motion.div>
