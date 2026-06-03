@@ -78,8 +78,22 @@ export default function BulkEditPage() {
                 console.warn("Could not create object URL for file", item.file);
               }
             }
+            
+            // Legacy conversion to multiple logos
+            let newLogos = item.logos || [];
+            if (newLogos.length === 0 && item.showLogo && item.logoUrl) {
+              newLogos.push({
+                id: Math.random().toString(36).substring(7),
+                url: item.logoUrl,
+                opacity: item.logoOpacity !== undefined ? item.logoOpacity : 70,
+                size: item.logoSizePercent !== undefined ? item.logoSizePercent : 30,
+                position: item.logoPosPercent || { x: 50, y: 50 }
+              });
+            }
+
             return {
               ...item,
+              logos: newLogos,
               originalUrl: restoredUrl
             };
           });
@@ -148,10 +162,13 @@ export default function BulkEditPage() {
 
     let defaultSettings = {
       aspect: 1,
-      showLogo: true,
-      logoOpacity: 70,
-      logoSizePercent: 30,
-      logoPosPercent: { x: 50, y: 50 }
+      logos: [{
+        id: Math.random().toString(36).substring(7),
+        url: logoUrl,
+        opacity: 70,
+        size: 30,
+        position: { x: 50, y: 50 }
+      }]
     };
     
     const savedSettings = localStorage.getItem("editorSettings");
@@ -188,24 +205,13 @@ export default function BulkEditPage() {
   const logos = workspaceData?.logos || userData?.logos || [];
   const activeLogoUrl = currentImage?.logoUrl || (logos.length > 0 ? logos[0].url : logoUrl);
 
-  const handleApplyLogoToAll = () => {
+  const handleApplyLogosToAll = () => {
     if (!currentImage) return;
     setQueuedImages(prev => prev.map(img => ({
       ...img,
-      logoUrl: activeLogoUrl
+      logos: [...(currentImage.logos || [])]
     })));
-    toast.success("Logo applied to all images!");
-  };
-
-  const handleApplyLogoSettingsToAll = () => {
-    if (!currentImage) return;
-    setQueuedImages(prev => prev.map(img => ({
-      ...img,
-      logoOpacity: currentImage.logoOpacity,
-      logoSizePercent: currentImage.logoSizePercent,
-      logoPosPercent: currentImage.logoPosPercent
-    })));
-    toast.success("Logo settings applied to all images!");
+    toast.success("All logos applied to all images!");
   };
 
   const handleApplyAspectToAll = () => {
@@ -544,18 +550,19 @@ export default function BulkEditPage() {
                       style={{ containerStyle: { borderRadius: '0' } }}
                     />
 
-                    {currentImage.showLogo && (
+                    {currentImage.logos && currentImage.logos.map((logo, index) => (
                       <div 
+                        key={logo.id}
                         className="absolute inset-0 z-10"
                         style={{ pointerEvents: 'none' }}
                       >
                         <div 
                           className="absolute select-none cursor-grab active:cursor-grabbing"
                           style={{
-                            left: `${currentImage.logoPosPercent.x}%`,
-                            top: `${currentImage.logoPosPercent.y}%`,
-                            width: `${currentImage.logoSizePercent}%`,
-                            opacity: currentImage.logoOpacity / 100,
+                            left: `${logo.position.x}%`,
+                            top: `${logo.position.y}%`,
+                            width: `${logo.size}%`,
+                            opacity: logo.opacity / 100,
                             transform: 'translate(-50%, -50%)',
                             pointerEvents: 'auto',
                             touchAction: 'none',
@@ -569,7 +576,10 @@ export default function BulkEditPage() {
                               const rect = container.getBoundingClientRect();
                               const x = Math.min(100, Math.max(0, ((moveEvent.clientX - rect.left) / rect.width) * 100));
                               const y = Math.min(100, Math.max(0, ((moveEvent.clientY - rect.top) / rect.height) * 100));
-                              updateCurrentImage({ logoPosPercent: { x, y } });
+                              
+                              const newLogos = [...currentImage.logos];
+                              newLogos[index].position = { x, y };
+                              updateCurrentImage({ logos: newLogos });
                             };
 
                             const onMouseUp = () => {
@@ -582,8 +592,8 @@ export default function BulkEditPage() {
                           }}
                         >
                           <img 
-                            src={activeLogoUrl} 
-                            alt="Watermark Logo" 
+                            src={logo.url} 
+                            alt={`Watermark Logo ${index + 1}`} 
                             className="w-full h-auto object-contain drop-shadow-md select-none pointer-events-none" 
                             draggable={false}
                           />
@@ -591,7 +601,7 @@ export default function BulkEditPage() {
                           <div className="absolute inset-0 rounded border-2 border-dashed border-white/0 hover:border-white/60 transition-colors duration-150" />
                         </div>
                       </div>
-                    )}
+                    ))}
                   </>
                 )}
               </div>
@@ -698,120 +708,157 @@ export default function BulkEditPage() {
 
                 <div className="h-px bg-border my-2" />
 
-                {/* Logo Watermark Control Header */}
+                {/* Logo Watermarks Section */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold text-foreground">Show Logo</Label>
-                    <Switch 
-                      checked={currentImage.showLogo} 
-                      onCheckedChange={(val) => updateCurrentImage({ showLogo: val })} 
-                    />
+                    <Label className="text-xs font-semibold text-foreground">Watermarks</Label>
+                    <span className="text-indigo-500 text-xs font-bold cursor-pointer hover:underline" onClick={handleApplyLogosToAll}>
+                      Apply All to All
+                    </span>
                   </div>
 
-                  {currentImage.showLogo && (
-                    <div className="space-y-4 pt-2 pl-1">
+                  {currentImage.logos && currentImage.logos.map((logo, index) => (
+                    <div key={logo.id} className="border border-border p-3 rounded-lg bg-card space-y-4 relative">
+                      <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground border-b pb-2">
+                        <span>Logo {index + 1}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-5 w-5 text-red-500 hover:bg-red-50"
+                          onClick={() => {
+                            const newLogos = currentImage.logos.filter(l => l.id !== logo.id);
+                            updateCurrentImage({ logos: newLogos });
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+
                       {/* Logo Selector */}
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground font-medium">Select Logo</span>
-                          <span className="text-indigo-500 font-bold cursor-pointer hover:underline" onClick={handleApplyLogoToAll}>
-                            Apply to All
-                          </span>
-                        </div>
+                        <span className="text-xs text-muted-foreground font-medium">Select Image</span>
                         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                          {logos.map(logo => (
+                          {logos.map(availableLogo => (
                             <div 
-                              key={logo.id} 
-                              onClick={() => updateCurrentImage({ logoUrl: logo.url })}
-                              className={`w-12 h-12 rounded-lg border-2 p-1 cursor-pointer flex-shrink-0 flex items-center justify-center bg-slate-50 transition-all ${
-                                activeLogoUrl === logo.url ? "border-indigo-500 shadow-sm" : "border-transparent hover:border-slate-300"
+                              key={availableLogo.id} 
+                              onClick={() => {
+                                const newLogos = [...currentImage.logos];
+                                newLogos[index].url = availableLogo.url;
+                                updateCurrentImage({ logos: newLogos });
+                              }}
+                              className={`w-10 h-10 rounded-lg border-2 p-1 cursor-pointer flex-shrink-0 flex items-center justify-center bg-slate-50 transition-all ${
+                                logo.url === availableLogo.url ? "border-indigo-500 shadow-sm" : "border-transparent hover:border-slate-300"
                               }`}
                             >
-                              <img src={logo.url} alt={logo.name} className="max-w-full max-h-full object-contain" />
+                              <img src={availableLogo.url} alt={availableLogo.name} className="max-w-full max-h-full object-contain" />
                             </div>
                           ))}
                           {logos.length < 3 && (
-                            <label className="w-12 h-12 rounded-lg border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/50 cursor-pointer flex-shrink-0 flex flex-col items-center justify-center transition-colors group">
+                            <label className="w-10 h-10 rounded-lg border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/50 cursor-pointer flex-shrink-0 flex flex-col items-center justify-center transition-colors group">
                               <input 
                                 type="file" 
                                 accept="image/png, image/jpeg" 
                                 className="hidden" 
                                 onChange={handleUploadLogo}
                               />
-                              <UploadCloud className="w-4 h-4 text-slate-400 group-hover:text-indigo-500" />
+                              <UploadCloud className="w-3 h-3 text-slate-400 group-hover:text-indigo-500" />
                             </label>
-                          )}
-                          {logos.length === 0 && (
-                            <div className="text-[10px] text-muted-foreground flex items-center bg-slate-50 p-2 rounded border border-dashed w-full h-12">
-                              No logos yet. Click to upload.
-                            </div>
                           )}
                         </div>
                       </div>
 
                       {/* Opacity Control */}
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center text-xs mt-4 border-t pt-4">
-                          <span className="font-semibold text-foreground">Logo Settings</span>
-                          <span className="text-indigo-500 font-bold cursor-pointer hover:underline" onClick={handleApplyLogoSettingsToAll}>
-                            Apply Settings to All
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center text-xs pt-2">
-                          <span className="text-muted-foreground font-medium">Opacity: {currentImage.logoOpacity}%</span>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-muted-foreground font-medium">Opacity: {logo.opacity}%</span>
                         </div>
                         <Slider
-                          value={[currentImage.logoOpacity]}
+                          value={[logo.opacity]}
                           min={0}
                           max={100}
                           step={1}
-                          onValueChange={(val) => updateCurrentImage({ logoOpacity: getValue(val) })}
+                          onValueChange={(val) => {
+                            const newLogos = [...currentImage.logos];
+                            newLogos[index].opacity = getValue(val);
+                            updateCurrentImage({ logos: newLogos });
+                          }}
                         />
                       </div>
 
                       {/* Size Control */}
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground font-medium">Size: {currentImage.logoSizePercent}%</span>
+                          <span className="text-muted-foreground font-medium">Size: {logo.size}%</span>
                         </div>
                         <Slider
-                          value={[currentImage.logoSizePercent]}
-                          min={10}
-                          max={60}
+                          value={[logo.size]}
+                          min={5}
+                          max={100}
                           step={1}
-                          onValueChange={(val) => updateCurrentImage({ logoSizePercent: getValue(val) })}
+                          onValueChange={(val) => {
+                            const newLogos = [...currentImage.logos];
+                            newLogos[index].size = getValue(val);
+                            updateCurrentImage({ logos: newLogos });
+                          }}
                         />
                       </div>
 
-                      {/* Horizontal Position */}
+                      {/* Position X */}
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground font-medium">X Position</span>
+                          <span className="text-muted-foreground font-medium">X Position: {logo.position.x}%</span>
                         </div>
                         <Slider
-                          value={[currentImage.logoPosPercent.x]}
+                          value={[logo.position.x]}
                           min={0}
                           max={100}
                           step={1}
-                          onValueChange={(val) => updateCurrentImage({ logoPosPercent: { ...currentImage.logoPosPercent, x: getValue(val) } })}
+                          onValueChange={(val) => {
+                            const newLogos = [...currentImage.logos];
+                            newLogos[index].position.x = getValue(val);
+                            updateCurrentImage({ logos: newLogos });
+                          }}
                         />
                       </div>
 
-                      {/* Vertical Position */}
+                      {/* Position Y */}
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground font-medium">Y Position</span>
+                          <span className="text-muted-foreground font-medium">Y Position: {logo.position.y}%</span>
                         </div>
                         <Slider
-                          value={[currentImage.logoPosPercent.y]}
+                          value={[logo.position.y]}
                           min={0}
                           max={100}
                           step={1}
-                          onValueChange={(val) => updateCurrentImage({ logoPosPercent: { ...currentImage.logoPosPercent, y: getValue(val) } })}
+                          onValueChange={(val) => {
+                            const newLogos = [...currentImage.logos];
+                            newLogos[index].position.y = getValue(val);
+                            updateCurrentImage({ logos: newLogos });
+                          }}
                         />
                       </div>
                     </div>
-                  )}
+                  ))}
+
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full border-dashed text-xs h-8 text-indigo-500 border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50"
+                    onClick={() => {
+                      const urlToUse = logos.length > 0 ? logos[0].url : logoUrl;
+                      const newLogos = [...(currentImage.logos || []), {
+                        id: Math.random().toString(36).substring(7),
+                        url: urlToUse,
+                        opacity: 70,
+                        size: 30,
+                        position: { x: 50, y: 50 }
+                      }];
+                      updateCurrentImage({ logos: newLogos });
+                    }}
+                  >
+                    + Add Another Logo
+                  </Button>
                 </div>
               </div>
               
