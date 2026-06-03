@@ -10,7 +10,7 @@ import { PostCard } from "@/components/PostCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Search, Filter, Download, Trash2, CheckSquare, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
+import { Search, Filter, Download, Trash2, CheckSquare, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Send } from "lucide-react";
 import JSZip from "jszip";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
@@ -29,6 +29,16 @@ export default function LibraryPage() {
   const [previewPostIndex, setPreviewPostIndex] = useState(null);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [exportFolderName, setExportFolderName] = useState("RD_Models_Export");
+  
+  const [showZipModal, setShowZipModal] = useState(false);
+  const [zipFolderName, setZipFolderName] = useState("");
+
+  useEffect(() => {
+    if (showZipModal) {
+      const now = new Date();
+      setZipFolderName(`${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`);
+    }
+  }, [showZipModal]);
 
   // Reset zoom when switching images
   useEffect(() => {
@@ -157,6 +167,123 @@ export default function LibraryPage() {
     }
   };
 
+  // Bulk Download as ZIP
+  const downloadAsZip = async () => {
+    if (selectedIds.size === 0) return;
+    const folderName = zipFolderName.trim() || "RD_Models_Export";
+    
+    try {
+      setShowZipModal(false);
+      toast.loading("Preparing ZIP file...", { id: "zip-toast" });
+      const zip = new JSZip();
+      
+      const imgFolder = zip.folder(folderName);
+      
+      let addedCount = 0;
+
+      for (const id of selectedIds) {
+        const post = posts.find(p => p.id === id);
+        if (post) {
+          const url = post.processedUrl || post.originalUrl;
+          const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+          const response = await fetch(proxyUrl);
+          if (response.ok) {
+            const blob = await response.blob();
+            // Prevent duplicate filenames in ZIP if any
+            let filename = post.filename;
+            let counter = 1;
+            while (imgFolder.file(filename)) {
+              const nameParts = post.filename.split('.');
+              const ext = nameParts.pop();
+              filename = `${nameParts.join('.')}_${counter}.${ext}`;
+              counter++;
+            }
+            imgFolder.file(filename, blob);
+            addedCount++;
+          }
+        }
+      }
+
+      if (addedCount === 0) throw new Error("No files could be fetched");
+
+      toast.loading("Generating ZIP file...", { id: "zip-toast" });
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const zipUrl = URL.createObjectURL(zipBlob);
+      
+      const link = document.createElement("a");
+      link.href = zipUrl;
+      link.download = `${folderName}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(zipUrl);
+      toast.success(`Successfully downloaded ${addedCount} files as ZIP!`, { id: "zip-toast" });
+      setSelectedIds(new Set());
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message || "ZIP Download failed", { id: "zip-toast" });
+    }
+  };
+
+  // Native WhatsApp/Device Share
+  const shareToWhatsApp = async () => {
+    if (selectedIds.size === 0) return;
+    
+    // Check if the browser supports sharing files
+    if (!navigator.canShare || !navigator.share) {
+      toast.error("Your browser or device does not support native file sharing. Please use Download ZIP instead.");
+      return;
+    }
+
+    try {
+      toast.loading("Preparing files for sharing...", { id: "share-toast" });
+      const filesArray = [];
+
+      for (const id of selectedIds) {
+        const post = posts.find(p => p.id === id);
+        if (post) {
+          const url = post.processedUrl || post.originalUrl;
+          const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+          const response = await fetch(proxyUrl);
+          if (response.ok) {
+            const blob = await response.blob();
+            // WhatsApp needs a valid file extension, usually jpeg/png
+            const ext = post.filename.split('.').pop() || 'jpg';
+            const file = new File([blob], post.filename, { type: blob.type || `image/${ext}` });
+            filesArray.push(file);
+          }
+        }
+      }
+
+      if (filesArray.length === 0) {
+        throw new Error("No files could be prepared for sharing");
+      }
+
+      // Check if we can share these specific files
+      if (!navigator.canShare({ files: filesArray })) {
+        throw new Error("Your system doesn't support sharing this many files at once. Try selecting fewer photos.");
+      }
+
+      toast.dismiss("share-toast");
+      await navigator.share({
+        files: filesArray,
+        title: 'PostFlow Gallery',
+        text: 'Here are the processed photos from PostFlow.'
+      });
+      
+      toast.success("Shared successfully!");
+      setSelectedIds(new Set());
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error("Share failed:", error);
+        toast.error(error.message || "Sharing failed", { id: "share-toast" });
+      } else {
+        toast.dismiss("share-toast");
+      }
+    }
+  };
+
   const handlePostAction = async (action, post) => {
     switch(action) {
       case 'delete':
@@ -257,6 +384,12 @@ export default function LibraryPage() {
               <Button variant="secondary" size="sm" onClick={() => setShowExportModal(true)}>
                 <Download className="w-4 h-4 mr-2" /> Export to Folder
               </Button>
+              <Button variant="default" size="sm" onClick={() => setShowZipModal(true)}>
+                <Download className="w-4 h-4 mr-2" /> Download ZIP
+              </Button>
+              <Button variant="outline" size="sm" onClick={shareToWhatsApp} className="border-green-200 text-green-700 bg-green-50 hover:bg-green-100 hover:text-green-800">
+                <Send className="w-4 h-4 mr-2" /> Send WhatsApp
+              </Button>
             </motion.div>
           )}
         </div>
@@ -337,6 +470,30 @@ export default function LibraryPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowExportModal(false)}>Cancel</Button>
             <Button onClick={confirmExport}>Select Destination & Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ZIP Folder Modal */}
+      <Dialog open={showZipModal} onOpenChange={setShowZipModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Download {selectedIds.size} item(s) as ZIP</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium mb-2 block">Name for ZIP & Folder</label>
+            <Input 
+              value={zipFolderName} 
+              onChange={(e) => setZipFolderName(e.target.value)} 
+              placeholder="e.g. Maharashtra Project" 
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              This name will be used for both the downloaded ZIP file and the folder inside it.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowZipModal(false)}>Cancel</Button>
+            <Button onClick={downloadAsZip}>Download ZIP</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

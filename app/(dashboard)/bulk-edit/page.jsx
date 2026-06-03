@@ -192,12 +192,29 @@ export default function BulkEditPage() {
     if (!currentImage) return;
     setQueuedImages(prev => prev.map(img => ({
       ...img,
-      logoUrl: activeLogoUrl,
+      logoUrl: activeLogoUrl
+    })));
+    toast.success("Logo applied to all images!");
+  };
+
+  const handleApplyLogoSettingsToAll = () => {
+    if (!currentImage) return;
+    setQueuedImages(prev => prev.map(img => ({
+      ...img,
       logoOpacity: currentImage.logoOpacity,
       logoSizePercent: currentImage.logoSizePercent,
       logoPosPercent: currentImage.logoPosPercent
     })));
-    toast.success("Logo & settings applied to all images!");
+    toast.success("Logo settings applied to all images!");
+  };
+
+  const handleApplyAspectToAll = () => {
+    if (!currentImage) return;
+    setQueuedImages(prev => prev.map(img => ({
+      ...img,
+      aspect: currentImage.aspect
+    })));
+    toast.success("Aspect ratio applied to all images!");
   };
 
   const handleUploadLogo = async (e) => {
@@ -380,7 +397,7 @@ export default function BulkEditPage() {
   };
 
   // Re-Edit Action
-  const handlePostAction = (action, post) => {
+  const handlePostAction = async (action, post) => {
     if (action === 'delete') {
       setSelectedIds(new Set([post.id]));
       setShowDeleteModal(true);
@@ -392,10 +409,28 @@ export default function BulkEditPage() {
         setPreviewCrop({ x: 0, y: 0 });
       }
     } else if (action === 'download') {
-      const link = document.createElement("a");
-      link.href = post.processedUrl || post.originalUrl;
-      link.download = post.filename;
-      link.click();
+      try {
+        toast.loading(`Downloading ${post.filename}...`, { id: 'download-toast' });
+        const url = post.processedUrl || post.originalUrl;
+        const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error("Failed to fetch");
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = post.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        URL.revokeObjectURL(blobUrl);
+        toast.success(`Downloaded ${post.filename}`, { id: 'download-toast' });
+      } catch (e) {
+        console.error("Failed to download image", e);
+        toast.error("Failed to download", { id: 'download-toast' });
+      }
     } else if (action === 'edit') {
       const restoredItem = {
         id: `re-edit-${post.id}`,
@@ -583,7 +618,12 @@ export default function BulkEditPage() {
               <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 {/* Size (Aspect Ratio) */}
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-foreground">Size (Aspect Ratio)</Label>
+                  <div className="flex justify-between items-center">
+                    <Label className="text-xs font-semibold text-foreground">Size (Aspect Ratio)</Label>
+                    <span className="text-indigo-500 text-[10px] font-bold cursor-pointer hover:underline" onClick={handleApplyAspectToAll}>
+                      Apply to All
+                    </span>
+                  </div>
                   <select
                     value={currentImage.aspect || ""}
                     onChange={(e) => {
@@ -711,7 +751,13 @@ export default function BulkEditPage() {
 
                       {/* Opacity Control */}
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center text-xs">
+                        <div className="flex justify-between items-center text-xs mt-4 border-t pt-4">
+                          <span className="font-semibold text-foreground">Logo Settings</span>
+                          <span className="text-indigo-500 font-bold cursor-pointer hover:underline" onClick={handleApplyLogoSettingsToAll}>
+                            Apply Settings to All
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs pt-2">
                           <span className="text-muted-foreground font-medium">Opacity: {currentImage.logoOpacity}%</span>
                         </div>
                         <Slider
