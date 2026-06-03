@@ -590,6 +590,38 @@ export default function BulkEditPage() {
                             window.addEventListener('mousemove', onMouseMove);
                             window.addEventListener('mouseup', onMouseUp);
                           }}
+                          ref={(node) => {
+                            if (!node) return;
+                            const handleWheel = (e) => {
+                              e.stopPropagation();
+                              if (e.ctrlKey || e.metaKey) {
+                                e.preventDefault(); // Stop browser zoom
+                              }
+                              
+                              const sensitivity = 0.05;
+                              const change = e.deltaY * -sensitivity;
+                              const newLogos = [...currentImage.logos];
+
+                              if (e.ctrlKey || e.metaKey) {
+                                let newOpacity = logo.opacity + (e.deltaY > 0 ? -5 : 5);
+                                newOpacity = Math.max(0, Math.min(100, newOpacity));
+                                newLogos[index].opacity = newOpacity;
+                              } else {
+                                let newSize = logo.size + change;
+                                newSize = Math.max(5, Math.min(100, newSize));
+                                newLogos[index].size = newSize;
+                              }
+                              
+                              updateCurrentImage({ logos: newLogos });
+                            };
+
+                            // Prevent duplicate listeners on re-render
+                            if (node._handleWheel) {
+                              node.removeEventListener('wheel', node._handleWheel);
+                            }
+                            node._handleWheel = handleWheel;
+                            node.addEventListener('wheel', handleWheel, { passive: false });
+                          }}
                         >
                           <img 
                             src={logo.url} 
@@ -770,7 +802,8 @@ export default function BulkEditPage() {
                       {/* Opacity Control */}
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground font-medium">Opacity: {logo.opacity}%</span>
+                          <span className="text-muted-foreground font-medium">Opacity: {Math.round(logo.opacity)}%</span>
+                          <span className="text-[9px] text-muted-foreground/60 bg-slate-100 px-1.5 py-0.5 rounded border uppercase tracking-wider font-semibold">Ctrl + Mouse</span>
                         </div>
                         <Slider
                           value={[logo.opacity]}
@@ -788,7 +821,8 @@ export default function BulkEditPage() {
                       {/* Size Control */}
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground font-medium">Size: {logo.size}%</span>
+                          <span className="text-muted-foreground font-medium">Size: {Math.round(logo.size)}%</span>
+                          <span className="text-[9px] text-muted-foreground/60 bg-slate-100 px-1.5 py-0.5 rounded border uppercase tracking-wider font-semibold">Mouse Scroll</span>
                         </div>
                         <Slider
                           value={[logo.size]}
@@ -806,7 +840,7 @@ export default function BulkEditPage() {
                       {/* Position X */}
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground font-medium">X Position: {logo.position.x}%</span>
+                          <span className="text-muted-foreground font-medium">X Position: {Math.round(logo.position.x)}%</span>
                         </div>
                         <Slider
                           value={[logo.position.x]}
@@ -824,7 +858,7 @@ export default function BulkEditPage() {
                       {/* Position Y */}
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground font-medium">Y Position: {logo.position.y}%</span>
+                          <span className="text-muted-foreground font-medium">Y Position: {Math.round(logo.position.y)}%</span>
                         </div>
                         <Slider
                           value={[logo.position.y]}
