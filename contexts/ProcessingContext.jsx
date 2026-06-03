@@ -44,12 +44,9 @@ export function ProcessingProvider({ children }) {
               croppedAreaPixels: img.croppedAreaPixels,
               zoom: img.zoom,
               crop: img.crop,
-              aspect: img.aspect,
-              naturalAspect: img.naturalAspect,
-              showLogo: img.showLogo,
-              logoOpacity: img.logoOpacity,
-              logoSizePercent: img.logoSizePercent,
-              logoPosPercent: img.logoPosPercent
+              aspect: img.aspect || null,
+              naturalAspect: img.naturalAspect || null,
+              logos: img.logos || []
             },
             resolvedLogoUrl
           );
@@ -63,14 +60,11 @@ export function ProcessingProvider({ children }) {
             updatedAt: new Date().toISOString(),
             processedUrl: downloadUrl,
             savedSettings: {
-              aspect: img.aspect,
-              crop: img.crop,
-              zoom: img.zoom,
-              naturalAspect: img.naturalAspect,
-              showLogo: img.showLogo,
-              logoOpacity: img.logoOpacity,
-              logoSizePercent: img.logoSizePercent,
-              logoPosPercent: img.logoPosPercent
+              aspect: img.aspect || null,
+              crop: img.crop || null,
+              zoom: img.zoom || null,
+              naturalAspect: img.naturalAspect || null,
+              logos: img.logos || []
             }
           });
 
@@ -85,12 +79,9 @@ export function ProcessingProvider({ children }) {
               croppedAreaPixels: img.croppedAreaPixels,
               zoom: img.zoom,
               crop: img.crop,
-              aspect: img.aspect,
-              naturalAspect: img.naturalAspect,
-              showLogo: img.showLogo,
-              logoOpacity: img.logoOpacity,
-              logoSizePercent: img.logoSizePercent,
-              logoPosPercent: img.logoPosPercent
+              aspect: img.aspect || null,
+              naturalAspect: img.naturalAspect || null,
+              logos: img.logos || []
             },
             resolvedLogoUrl
           );
@@ -114,14 +105,11 @@ export function ProcessingProvider({ children }) {
             createdAt: new Date().toISOString(),
             status: "completed",
             savedSettings: {
-              aspect: img.aspect,
-              crop: img.crop,
-              zoom: img.zoom,
-              naturalAspect: img.naturalAspect,
-              showLogo: img.showLogo,
-              logoOpacity: img.logoOpacity,
-              logoSizePercent: img.logoSizePercent,
-              logoPosPercent: img.logoPosPercent
+              aspect: img.aspect || null,
+              crop: img.crop || null,
+              zoom: img.zoom || null,
+              naturalAspect: img.naturalAspect || null,
+              logos: img.logos || []
             }
           });
 
