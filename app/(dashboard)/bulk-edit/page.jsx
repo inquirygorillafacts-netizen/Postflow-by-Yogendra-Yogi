@@ -16,7 +16,7 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { CheckSquare, Trash2, Download, Play, Layers, Clock, ZoomIn, ZoomOut, Move, ChevronLeft, ChevronRight, X, Search, UploadCloud } from "lucide-react";
+import { CheckSquare, Trash2, Download, Play, Layers, Clock, ZoomIn, ZoomOut, Move, ChevronLeft, ChevronRight, X, Search, UploadCloud, Plus } from "lucide-react";
 import JSZip from "jszip";
 import { createProcessedImage } from "@/lib/canvasUtils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -876,9 +876,8 @@ export default function BulkEditPage() {
                   ))}
 
                   <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full border-dashed text-xs h-8 text-indigo-500 border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50"
+                    variant="default" 
+                    className="w-full h-12 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/25 font-bold text-sm group transition-all hover:-translate-y-0.5 rounded-xl mt-2"
                     onClick={() => {
                       const urlToUse = logos.length > 0 ? logos[0].url : logoUrl;
                       const newLogos = [...(currentImage.logos || []), {
@@ -891,7 +890,8 @@ export default function BulkEditPage() {
                       updateCurrentImage({ logos: newLogos });
                     }}
                   >
-                    + Add Another Logo
+                    <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                    Add Another Logo
                   </Button>
                 </div>
               </div>
