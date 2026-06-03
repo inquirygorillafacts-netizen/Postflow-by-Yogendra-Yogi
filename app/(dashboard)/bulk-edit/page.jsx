@@ -22,6 +22,7 @@ import { createProcessedImage } from "@/lib/canvasUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 
+
 const ASPECT_RATIOS = [
   { label: "1:1 Square", value: 1 },
   { label: "4:5 Portrait", value: 4 / 5 },
@@ -35,7 +36,7 @@ export default function BulkEditPage() {
   const [queuedImages, setQueuedImages] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [workspaceData, setWorkspaceData] = useState(null);
-  
+
   const [logoUrl, setLogoUrl] = useState("/logo.png");
 
   // Track exact crop box size using DOM observer
@@ -52,7 +53,7 @@ export default function BulkEditPage() {
         observer = new ResizeObserver(() => {
           const containerRect = containerRef.current.getBoundingClientRect();
           const cropRect = cropArea.getBoundingClientRect();
-          
+
           setCropBoxRect({
             width: cropRect.width,
             height: cropRect.height,
@@ -77,7 +78,7 @@ export default function BulkEditPage() {
 
   const getCropBoxStyle = () => {
     if (!cropBoxRect) return { display: 'none' };
-    
+
     return {
       width: `${cropBoxRect.width}px`,
       height: `${cropBoxRect.height}px`,
@@ -93,7 +94,7 @@ export default function BulkEditPage() {
   // Processing State
   const { isProcessing, startProcessing } = useProcessing();
   const [gallery, setGallery] = useState([]);
-  
+
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -119,7 +120,7 @@ export default function BulkEditPage() {
       try {
         const savedQueue = await localforage.getItem('bulkEdit_queuedImages');
         const savedIndex = await localforage.getItem('bulkEdit_currentIndex');
-        
+
         if (savedQueue && Array.isArray(savedQueue)) {
           const restoredQueue = savedQueue.map(item => {
             let restoredUrl = item.originalUrl;
@@ -130,7 +131,7 @@ export default function BulkEditPage() {
                 console.warn("Could not create object URL for file", item.file);
               }
             }
-            
+
             // Legacy conversion to multiple logos
             let newLogos = item.logos || [];
             if (newLogos.length === 0 && item.showLogo && item.logoUrl) {
@@ -151,7 +152,7 @@ export default function BulkEditPage() {
           });
           setQueuedImages(restoredQueue);
         }
-        
+
         if (savedIndex !== null) setCurrentIndex(savedIndex);
       } catch (err) {
         console.error("Failed to load state", err);
@@ -188,7 +189,7 @@ export default function BulkEditPage() {
   // Save state to localforage when it changes (Debounced)
   useEffect(() => {
     if (!isLoaded) return;
-    
+
     const timeout = setTimeout(() => {
       // Save queue
       const queueToSave = queuedImages.map(item => {
@@ -201,8 +202,8 @@ export default function BulkEditPage() {
       });
       localforage.setItem('bulkEdit_queuedImages', queueToSave);
       localforage.setItem('bulkEdit_currentIndex', currentIndex);
-    }, 1000); 
-    
+    }, 1000);
+
     return () => clearTimeout(timeout);
   }, [queuedImages, currentIndex, isLoaded]);
 
@@ -222,13 +223,13 @@ export default function BulkEditPage() {
         position: { x: 50, y: 50 }
       }]
     };
-    
+
     const savedSettings = localStorage.getItem("editorSettings");
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
         defaultSettings = { ...defaultSettings, ...parsed };
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const newQueued = allowed.map(file => ({
@@ -278,23 +279,23 @@ export default function BulkEditPage() {
   const handleUploadLogo = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !activeWorkspace) return;
-    
+
     if (logos.length >= 3) {
       toast.error("Maximum 3 logos allowed. Please delete one from Settings.");
       return;
     }
 
     const toastId = toast.loading("Uploading logo...");
-    
+
     try {
       const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
       const { doc, updateDoc } = await import("firebase/firestore");
       const { storage, db } = await import("@/lib/firebase");
-      
+
       const extension = file.name.split('.').pop() || 'png';
       const fileName = `logo-${Date.now()}.${extension}`;
       const storageRef = ref(storage, `users/${activeWorkspace}/logos/${fileName}`);
-      
+
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
 
@@ -309,7 +310,7 @@ export default function BulkEditPage() {
       await updateDoc(doc(db, "users", activeWorkspace), {
         logos: updatedLogos
       });
-      
+
       updateCurrentImage({ logoUrl: url }); // Auto select newly uploaded logo
 
       toast.success("Logo uploaded successfully!", { id: toastId });
@@ -325,16 +326,16 @@ export default function BulkEditPage() {
 
   const onMediaLoaded = useCallback((mediaSize) => {
     updateCurrentImage({ naturalAspect: mediaSize.width / mediaSize.height });
-  }, [currentIndex]); 
+  }, [currentIndex]);
 
   const handleRun = async () => {
     if (queuedImages.length === 0) return toast.error("Upload some images first!");
     if (!activeWorkspace) return toast.error("Please login to save to database!");
-    
+
     // Trigger global processing
     const activeLogos = workspaceData?.logos || [];
     await startProcessing(queuedImages, activeWorkspace, activeLogos);
-    
+
     // Clear local queue immediately after starting
     const stashedQueue = await localforage.getItem('bulkEdit_stashedQueue');
     if (stashedQueue && stashedQueue.length > 0) {
@@ -352,7 +353,7 @@ export default function BulkEditPage() {
       await localforage.removeItem('bulkEdit_stashedQueue');
       setTimeout(() => toast.success("Previous images restored to queue!"), 500);
     } else {
-      setQueuedImages([]); 
+      setQueuedImages([]);
       setCurrentIndex(0);
       await localforage.removeItem('bulkEdit_queuedImages');
       await localforage.removeItem('bulkEdit_currentIndex');
@@ -415,7 +416,7 @@ export default function BulkEditPage() {
 
   const confirmExport = async () => {
     if (selectedIds.size === 0) return;
-    
+
     try {
       if (!window.showDirectoryPicker) {
         throw new Error("Your browser does not support saving directly to a folder. Please use Chrome or Edge.");
@@ -446,10 +447,10 @@ export default function BulkEditPage() {
       setSelectedIds(new Set());
     } catch (error) {
       if (error.name !== 'AbortError') {
-         console.error(error);
-         toast.error(error.message || "Export failed", { id: "export-toast" });
+        console.error(error);
+        toast.error(error.message || "Export failed", { id: "export-toast" });
       } else {
-         toast.dismiss("export-toast");
+        toast.dismiss("export-toast");
       }
     }
   };
@@ -475,14 +476,14 @@ export default function BulkEditPage() {
         if (!response.ok) throw new Error("Failed to fetch");
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
-        
+
         const link = document.createElement("a");
         link.href = blobUrl;
         link.download = post.filename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         URL.revokeObjectURL(blobUrl);
         toast.success(`Downloaded ${post.filename}`, { id: 'download-toast' });
       } catch (e) {
@@ -511,14 +512,14 @@ export default function BulkEditPage() {
       if (queuedImages.length > 0) {
         localforage.setItem('bulkEdit_stashedQueue', queuedImages);
       }
-      
+
       setQueuedImages([restoredItem]);
       setCurrentIndex(0);
       toast.success("Image moved to editor queue");
     }
   };
 
-  const filteredGallery = gallery.filter(item => 
+  const filteredGallery = gallery.filter(item =>
     item.filename.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -534,7 +535,7 @@ export default function BulkEditPage() {
 
       {/* 3-Column Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1 min-h-0">
-        
+
         {/* COLUMN 1: LEFT (PREVIEW AREA) - 5 Columns */}
         <div className="lg:col-span-5 flex flex-col min-h-0 bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           {queuedImages.length === 0 ? (
@@ -546,9 +547,9 @@ export default function BulkEditPage() {
               {/* HEADER NAV */}
               <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30 shrink-0">
                 <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
+                  <Button
+                    variant="outline"
+                    size="icon"
                     onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
                     disabled={currentIndex === 0}
                     className="h-8 w-8"
@@ -558,9 +559,9 @@ export default function BulkEditPage() {
                   <span className="text-sm font-bold w-16 text-center">
                     {currentIndex + 1} / {queuedImages.length}
                   </span>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
+                  <Button
+                    variant="outline"
+                    size="icon"
                     onClick={() => setCurrentIndex(Math.min(queuedImages.length - 1, currentIndex + 1))}
                     disabled={currentIndex === queuedImages.length - 1}
                     className="h-8 w-8"
@@ -604,7 +605,7 @@ export default function BulkEditPage() {
 
                     <div style={getCropBoxStyle()}>
                       {currentImage.logos && currentImage.logos.map((logo, index) => (
-                        <div 
+                        <div
                           key={logo.id || index}
                           className="absolute select-none cursor-grab active:cursor-grabbing"
                           style={{
@@ -625,7 +626,7 @@ export default function BulkEditPage() {
                               const rect = container.getBoundingClientRect();
                               const x = Math.min(100, Math.max(0, ((moveEvent.clientX - rect.left) / rect.width) * 100));
                               const y = Math.min(100, Math.max(0, ((moveEvent.clientY - rect.top) / rect.height) * 100));
-                              
+
                               const newLogos = [...currentImage.logos];
                               newLogos[index].position = { x, y };
                               updateCurrentImage({ logos: newLogos });
@@ -646,7 +647,7 @@ export default function BulkEditPage() {
                               if (e.ctrlKey || e.metaKey) {
                                 e.preventDefault(); // Stop browser zoom
                               }
-                              
+
                               const sensitivity = 0.05;
                               const change = e.deltaY * -sensitivity;
                               const newLogos = [...currentImage.logos];
@@ -660,7 +661,7 @@ export default function BulkEditPage() {
                                 newSize = Math.max(5, Math.min(100, newSize));
                                 newLogos[index].size = newSize;
                               }
-                              
+
                               updateCurrentImage({ logos: newLogos });
                             };
 
@@ -672,9 +673,9 @@ export default function BulkEditPage() {
                             node.addEventListener('wheel', handleWheel, { passive: false });
                           }}
                         >
-                          <img 
-                            src={logo.url} 
-                            alt="logo preview" 
+                          <img
+                            src={logo.url}
+                            alt="logo preview"
                             className="w-full h-auto object-contain pointer-events-none"
                             draggable={false}
                           />
@@ -705,7 +706,7 @@ export default function BulkEditPage() {
                   {currentImage.file?.name || "re-edited-file"}
                 </span>
               </div>
-              
+
               <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 {/* Size (Aspect Ratio) */}
                 <div className="space-y-2">
@@ -738,13 +739,13 @@ export default function BulkEditPage() {
                       Zoom: {Math.round(currentImage.zoom * 100)}%
                     </Label>
                     <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <ZoomOut 
-                        className="w-3.5 h-3.5 cursor-pointer hover:text-foreground active:scale-90" 
-                        onClick={() => updateCurrentImage({ zoom: Math.max(1, currentImage.zoom - 0.1) })} 
+                      <ZoomOut
+                        className="w-3.5 h-3.5 cursor-pointer hover:text-foreground active:scale-90"
+                        onClick={() => updateCurrentImage({ zoom: Math.max(1, currentImage.zoom - 0.1) })}
                       />
-                      <ZoomIn 
-                        className="w-3.5 h-3.5 cursor-pointer hover:text-foreground active:scale-90" 
-                        onClick={() => updateCurrentImage({ zoom: Math.min(3, currentImage.zoom + 0.1) })} 
+                      <ZoomIn
+                        className="w-3.5 h-3.5 cursor-pointer hover:text-foreground active:scale-90"
+                        onClick={() => updateCurrentImage({ zoom: Math.min(3, currentImage.zoom + 0.1) })}
                       />
                     </div>
                   </div>
@@ -802,9 +803,9 @@ export default function BulkEditPage() {
                     <div key={logo.id} className="border border-border p-3 rounded-lg bg-card space-y-4 relative">
                       <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground border-b pb-2">
                         <span>Logo {index + 1}</span>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-5 w-5 text-red-500 hover:bg-red-50"
                           onClick={() => {
                             const newLogos = currentImage.logos.filter(l => l.id !== logo.id);
@@ -820,26 +821,25 @@ export default function BulkEditPage() {
                         <span className="text-xs text-muted-foreground font-medium">Select Image</span>
                         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                           {logos.map(availableLogo => (
-                            <div 
-                              key={availableLogo.id} 
+                            <div
+                              key={availableLogo.id}
                               onClick={() => {
                                 const newLogos = [...currentImage.logos];
                                 newLogos[index].url = availableLogo.url;
                                 updateCurrentImage({ logos: newLogos });
                               }}
-                              className={`w-10 h-10 rounded-lg border-2 p-1 cursor-pointer flex-shrink-0 flex items-center justify-center bg-slate-50 transition-all ${
-                                logo.url === availableLogo.url ? "border-indigo-500 shadow-sm" : "border-transparent hover:border-slate-300"
-                              }`}
+                              className={`w-10 h-10 rounded-lg border-2 p-1 cursor-pointer flex-shrink-0 flex items-center justify-center bg-slate-50 transition-all ${logo.url === availableLogo.url ? "border-indigo-500 shadow-sm" : "border-transparent hover:border-slate-300"
+                                }`}
                             >
                               <img src={availableLogo.url} alt={availableLogo.name} className="max-w-full max-h-full object-contain" />
                             </div>
                           ))}
                           {logos.length < 3 && (
                             <label className="w-10 h-10 rounded-lg border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/50 cursor-pointer flex-shrink-0 flex flex-col items-center justify-center transition-colors group">
-                              <input 
-                                type="file" 
-                                accept="image/png, image/jpeg" 
-                                className="hidden" 
+                              <input
+                                type="file"
+                                accept="image/png, image/jpeg"
+                                className="hidden"
                                 onChange={handleUploadLogo}
                               />
                               <UploadCloud className="w-3 h-3 text-slate-400 group-hover:text-indigo-500" />
@@ -924,8 +924,8 @@ export default function BulkEditPage() {
                     </div>
                   ))}
 
-                  <Button 
-                    variant="default" 
+                  <Button
+                    variant="default"
                     className="w-full h-12 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/25 font-bold text-sm group transition-all hover:-translate-y-0.5 rounded-xl mt-2"
                     onClick={() => {
                       const urlToUse = logos.length > 0 ? logos[0].url : logoUrl;
@@ -944,11 +944,11 @@ export default function BulkEditPage() {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="p-4 border-t border-border shrink-0 bg-muted/30">
-                <Button 
+                <Button
                   onClick={handleRun}
-                  disabled={isProcessing} 
+                  disabled={isProcessing}
                   className="w-full h-10 font-bold bg-primary hover:bg-primary/90 text-white shadow-sm"
                 >
                   {isProcessing ? (
@@ -972,7 +972,7 @@ export default function BulkEditPage() {
                   {gallery.length} items
                 </span>
               </h3>
-              
+
               {selectedIds.size > 0 && (
                 <div className="flex gap-2">
                   <Button variant="outline" size="icon" className="h-7 w-7 text-destructive" onClick={() => setShowDeleteModal(true)}>
@@ -984,18 +984,18 @@ export default function BulkEditPage() {
                 </div>
               )}
             </div>
-            
+
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input 
-                placeholder="Search by name (e.g. rdmodels-55)" 
+              <Input
+                placeholder="Search by name (e.g. rdmodels-55)"
                 className="pl-9 h-9 text-xs"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto p-4">
             {gallery.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
@@ -1010,10 +1010,10 @@ export default function BulkEditPage() {
             ) : (
               <div className="grid grid-cols-2 gap-3 pb-20">
                 {filteredGallery.map(post => (
-                  <PostCard 
-                    key={post.id} 
-                    post={post} 
-                    onAction={handlePostAction} 
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    onAction={handlePostAction}
                     isSelected={selectedIds.has(post.id)}
                     onToggleSelect={() => handleToggleSelect(post.id)}
                   />
@@ -1063,9 +1063,9 @@ export default function BulkEditPage() {
         <DialogContent className="!max-w-full !w-screen !h-screen !m-0 !p-0 !rounded-none !bg-black !border-none overflow-hidden flex flex-col data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-200">
           <div className="flex items-center justify-between p-4 text-white shrink-0 absolute top-0 inset-x-0 z-50 pointer-events-auto bg-gradient-to-b from-black/60 to-transparent">
             <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="text-white hover:bg-white/20 rounded-full"
                 onClick={() => setPreviewPostIndex(null)}
               >
@@ -1078,12 +1078,12 @@ export default function BulkEditPage() {
                 {previewPostIndex !== null && `${previewPostIndex + 1} of ${filteredGallery.length}`}
               </span>
             </div>
-            
+
             <div className="flex items-center gap-3">
               {/* Optional actions can go here in the future */}
             </div>
           </div>
-          
+
           <div className="flex-1 relative w-full h-full bg-black">
             {previewPostIndex !== null && filteredGallery[previewPostIndex] && (
               <Cropper
@@ -1106,9 +1106,9 @@ export default function BulkEditPage() {
 
           {/* Floating Navigation Arrows */}
           <div className="absolute inset-y-0 left-4 flex items-center z-50 pointer-events-none">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="w-12 h-12 rounded-full bg-black/40 text-white hover:bg-black/70 pointer-events-auto transition-all"
               disabled={previewPostIndex === 0}
               onClick={() => {
@@ -1122,9 +1122,9 @@ export default function BulkEditPage() {
           </div>
 
           <div className="absolute inset-y-0 right-4 flex items-center z-50 pointer-events-none">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="w-12 h-12 rounded-full bg-black/40 text-white hover:bg-black/70 pointer-events-auto transition-all"
               disabled={previewPostIndex === filteredGallery.length - 1}
               onClick={() => {
