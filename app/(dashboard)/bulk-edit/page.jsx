@@ -239,7 +239,8 @@ export default function BulkEditPage() {
       crop: { x: 0, y: 0 },
       zoom: 1,
       naturalAspect: 1,
-      ...defaultSettings
+      ...defaultSettings,
+      logos: defaultSettings.logos ? JSON.parse(JSON.stringify(defaultSettings.logos)) : []
     }));
 
     setQueuedImages([...queuedImages, ...newQueued]);
@@ -262,7 +263,7 @@ export default function BulkEditPage() {
     if (!currentImage) return;
     setQueuedImages(prev => prev.map(img => ({
       ...img,
-      logos: [...(currentImage.logos || [])]
+      logos: currentImage.logos ? JSON.parse(JSON.stringify(currentImage.logos)) : []
     })));
     toast.success("All logos applied to all images!");
   };
@@ -627,8 +628,7 @@ export default function BulkEditPage() {
                               const x = Math.min(100, Math.max(0, ((moveEvent.clientX - rect.left) / rect.width) * 100));
                               const y = Math.min(100, Math.max(0, ((moveEvent.clientY - rect.top) / rect.height) * 100));
 
-                              const newLogos = [...currentImage.logos];
-                              newLogos[index].position = { x, y };
+                              const newLogos = currentImage.logos.map((l, i) => i === index ? { ...l, position: { x, y } } : l);
                               updateCurrentImage({ logos: newLogos });
                             };
 
@@ -650,16 +650,16 @@ export default function BulkEditPage() {
 
                               const sensitivity = 0.05;
                               const change = e.deltaY * -sensitivity;
-                              const newLogos = [...currentImage.logos];
+                              let newLogos;
 
                               if (e.ctrlKey || e.metaKey) {
                                 let newOpacity = logo.opacity + (e.deltaY > 0 ? -5 : 5);
                                 newOpacity = Math.max(0, Math.min(100, newOpacity));
-                                newLogos[index].opacity = newOpacity;
+                                newLogos = currentImage.logos.map((l, i) => i === index ? { ...l, opacity: newOpacity } : l);
                               } else {
                                 let newSize = logo.size + change;
                                 newSize = Math.max(5, Math.min(100, newSize));
-                                newLogos[index].size = newSize;
+                                newLogos = currentImage.logos.map((l, i) => i === index ? { ...l, size: newSize } : l);
                               }
 
                               updateCurrentImage({ logos: newLogos });
@@ -824,8 +824,7 @@ export default function BulkEditPage() {
                             <div
                               key={availableLogo.id}
                               onClick={() => {
-                                const newLogos = [...currentImage.logos];
-                                newLogos[index].url = availableLogo.url;
+                                const newLogos = currentImage.logos.map((l, i) => i === index ? { ...l, url: availableLogo.url } : l);
                                 updateCurrentImage({ logos: newLogos });
                               }}
                               className={`w-10 h-10 rounded-lg border-2 p-1 cursor-pointer flex-shrink-0 flex items-center justify-center bg-slate-50 transition-all ${logo.url === availableLogo.url ? "border-indigo-500 shadow-sm" : "border-transparent hover:border-slate-300"
@@ -860,8 +859,7 @@ export default function BulkEditPage() {
                           max={100}
                           step={1}
                           onValueChange={(val) => {
-                            const newLogos = [...currentImage.logos];
-                            newLogos[index].opacity = getValue(val);
+                            const newLogos = currentImage.logos.map((l, i) => i === index ? { ...l, opacity: getValue(val) } : l);
                             updateCurrentImage({ logos: newLogos });
                           }}
                         />
@@ -879,8 +877,7 @@ export default function BulkEditPage() {
                           max={100}
                           step={1}
                           onValueChange={(val) => {
-                            const newLogos = [...currentImage.logos];
-                            newLogos[index].size = getValue(val);
+                            const newLogos = currentImage.logos.map((l, i) => i === index ? { ...l, size: getValue(val) } : l);
                             updateCurrentImage({ logos: newLogos });
                           }}
                         />
@@ -897,8 +894,7 @@ export default function BulkEditPage() {
                           max={100}
                           step={1}
                           onValueChange={(val) => {
-                            const newLogos = [...currentImage.logos];
-                            newLogos[index].position.x = getValue(val);
+                            const newLogos = currentImage.logos.map((l, i) => i === index ? { ...l, position: { ...l.position, x: getValue(val) } } : l);
                             updateCurrentImage({ logos: newLogos });
                           }}
                         />
@@ -915,8 +911,7 @@ export default function BulkEditPage() {
                           max={100}
                           step={1}
                           onValueChange={(val) => {
-                            const newLogos = [...currentImage.logos];
-                            newLogos[index].position.y = getValue(val);
+                            const newLogos = currentImage.logos.map((l, i) => i === index ? { ...l, position: { ...l.position, y: getValue(val) } } : l);
                             updateCurrentImage({ logos: newLogos });
                           }}
                         />
