@@ -12,14 +12,30 @@ export function UploadZone({ onFilesSelected }) {
     }
   }, [onFilesSelected]);
 
+  const onDropRejected = useCallback((fileRejections) => {
+    import("react-hot-toast").then((module) => {
+      const toast = module.default;
+      fileRejections.forEach((rejection) => {
+        rejection.errors.forEach((err) => {
+          if (err.code === "file-too-large") {
+            toast.error(`${rejection.file.name} is too large (Max 50MB)`);
+          } else {
+            toast.error(`Failed to select ${rejection.file.name}: ${err.message}`);
+          }
+        });
+      });
+    });
+  }, []);
+
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop,
+    onDropRejected,
     accept: {
-      'image/jpeg': ['.jpeg', '.jpg'],
-      'image/png': ['.png'],
-      'image/webp': ['.webp']
+      'image/jpeg': ['.jpeg', '.jpg', '.JPG', '.JPEG'],
+      'image/png': ['.png', '.PNG'],
+      'image/webp': ['.webp', '.WEBP']
     },
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 50 * 1024 * 1024, // 50MB
   });
 
   return (
@@ -72,7 +88,7 @@ export function UploadZone({ onFilesSelected }) {
             JPG, PNG, WEBP
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted">
-            <span className="font-bold">10</span> MB Max
+            <span className="font-bold">50</span> MB Max
           </div>
         </div>
       </motion.div>

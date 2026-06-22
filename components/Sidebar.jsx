@@ -18,7 +18,8 @@ import {
   Loader2,
   PlusCircle,
   ChevronDown,
-  Check
+  Check,
+  Sparkles
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { collection, query, where, getDocs, updateDoc, doc, arrayUnion } from "firebase/firestore";
@@ -28,6 +29,7 @@ const mainNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/upload", label: "Single Edit", icon: Upload },
   { href: "/bulk-edit", label: "Bulk Edit", icon: Layers },
+  { href: "/advanced-editing", label: "EDVAS EDITING !", icon: Sparkles },
   { href: "/library", label: "Library", icon: Images },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/instagram", label: "Instagram", icon: Camera },
