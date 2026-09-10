@@ -60,8 +60,18 @@ export function ProcessingProvider({ children }) {
           zip.file(finalName, processedBlob);
           hasZipFiles = true;
 
-          // Note: Removed Firestore gallery update to prevent database bloating
-          // since images expire in 3 days on ImgBB.
+          // Save to Firestore so it appears in the gallery
+          await updateDoc(doc(db, "users", activeWorkspace, "gallery", img.reEditDocId), {
+            updatedAt: new Date().toISOString(),
+            processedUrl: downloadUrl,
+            savedSettings: {
+              aspect: img.aspect || null,
+              crop: img.crop || null,
+              zoom: img.zoom || null,
+              naturalAspect: img.naturalAspect || null,
+              logos: img.logos || []
+            }
+          });
 
           await updateDoc(doc(db, "users", activeWorkspace), {
             lifetimeReEdits: increment(1)
@@ -93,7 +103,21 @@ export function ProcessingProvider({ children }) {
             originalDownloadUrl = origUrl;
           }
 
-          // Note: Removed Firestore gallery creation to prevent database bloating
+          // Save to Firestore so it appears in the gallery
+          await addDoc(collection(db, "users", activeWorkspace, "gallery"), {
+            filename: finalName,
+            originalUrl: originalDownloadUrl,
+            processedUrl: downloadUrl,
+            createdAt: new Date().toISOString(),
+            status: "completed",
+            savedSettings: {
+              aspect: img.aspect || null,
+              crop: img.crop || null,
+              zoom: img.zoom || null,
+              naturalAspect: img.naturalAspect || null,
+              logos: img.logos || []
+            }
+          });
 
           await updateDoc(doc(db, "users", activeWorkspace), {
             lifetimeUploads: increment(1),

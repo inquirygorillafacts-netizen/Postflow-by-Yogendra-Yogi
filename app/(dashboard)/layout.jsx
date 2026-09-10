@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { Shield, Eye, Copy, RefreshCw, X, AlertTriangle, Sparkles, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
-import { doc, updateDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { doc, updateDoc, collection, getDocs, query, where, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { RetentionPopup } from "@/components/RetentionPopup";
 
@@ -31,11 +31,38 @@ export default function DashboardLayout({ children }) {
         router.push("/login");
       } else if (!userData || !userData.onboarded) {
         router.push("/onboarding");
-      } else if (userData.hasUnseenUpgrades === true || userData.hasUnseenUpgrades === undefined) {
-        setShowUpgradeModal(true);
+      } else {
+        if (userData.hasUnseenUpgrades === true || userData.hasUnseenUpgrades === undefined) {
+          setShowUpgradeModal(true);
+        }
+        
+        // Clean up expired gallery items (older than 3 days)
+        if (activeWorkspace) {
+          const cleanupExpiredImages = async () => {
+            try {
+              const galleryRef = collection(db, "users", activeWorkspace, "gallery");
+              const snapshot = await getDocs(galleryRef);
+              const threeDaysAgo = new Date();
+              threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+              snapshot.forEach(async (docSnap) => {
+                const data = docSnap.data();
+                if (data.createdAt) {
+                  const createdDate = new Date(data.createdAt);
+                  if (createdDate < threeDaysAgo) {
+                    await deleteDoc(docSnap.ref);
+                  }
+                }
+              });
+            } catch (err) {
+              console.error("Failed to cleanup expired images:", err);
+            }
+          };
+          cleanupExpiredImages();
+        }
       }
     }
-  }, [user, userData, loading, router]);
+  }, [user, userData, loading, router, activeWorkspace]);
 
   const handleDismissUpgrade = async () => {
     setShowUpgradeModal(false);
