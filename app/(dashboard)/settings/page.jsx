@@ -3,8 +3,8 @@
 import { useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { doc, updateDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
+import { uploadToImgBB, deleteFromImgBB } from "@/lib/imgbb";
 import { Button } from "@/components/ui/button";
 import { Building2, Phone, Image as ImageIcon, Trash2, UploadCloud, Loader2, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
@@ -56,16 +56,15 @@ export default function SettingsPage() {
     try {
       const extension = file.name.split('.').pop() || 'png';
       const fileName = `logo-${Date.now()}.${extension}`;
-      const storageRef = ref(storage, `users/${activeWorkspace}/logos/${fileName}`);
       
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const { url, deleteUrl } = await uploadToImgBB(file);
 
       const newLogo = {
         id: Date.now().toString(),
         name: file.name,
         url,
-        fileName
+        fileName,
+        deleteUrl
       };
 
       const updatedLogos = [...logos, newLogo];
@@ -88,9 +87,10 @@ export default function SettingsPage() {
     if(!confirm("Are you sure you want to delete this logo?")) return;
 
     try {
-      // 1. Delete from Storage
-      const storageRef = ref(storage, `users/${activeWorkspace}/logos/${logo.fileName}`);
-      await deleteObject(storageRef).catch(e => console.log("Storage delete error", e));
+      // 1. Attempt to delete from ImgBB if possible
+      if (logo.deleteUrl) {
+        await deleteFromImgBB(logo.deleteUrl);
+      }
 
       // 2. Remove from Firestore array
       const updatedLogos = logos.filter(l => l.id !== logo.id);

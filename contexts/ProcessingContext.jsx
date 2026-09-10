@@ -1,13 +1,14 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { collection, addDoc, updateDoc, doc, increment } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { createProcessedImage } from "@/lib/canvasUtils";
+import { uploadToImgBB } from "@/lib/imgbb";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Layers } from "lucide-react";
+import JSZip from "jszip";
 
 const ProcessingContext = createContext(null);
 
@@ -28,6 +29,8 @@ export function ProcessingProvider({ children }) {
     setTotalItems(queuedImages.length);
 
     let counter = parseInt(localStorage.getItem("imageCounter") || "1", 10);
+    const zip = new JSZip();
+    let hasZipFiles = false;
 
     for (let i = 0; i < queuedImages.length; i++) {
       const img = queuedImages[i];
@@ -52,21 +55,13 @@ export function ProcessingProvider({ children }) {
           );
           
           const finalName = newName.replace(/\.[^/.]+$/, "") + ".jpg";
-          const storageRef = ref(storage, `users/${activeWorkspace}/gallery/${finalName}`);
-          await uploadBytes(storageRef, processedBlob);
-          const downloadUrl = await getDownloadURL(storageRef);
+          const { url: downloadUrl } = await uploadToImgBB(processedBlob);
+          
+          zip.file(finalName, processedBlob);
+          hasZipFiles = true;
 
-          await updateDoc(doc(db, "users", activeWorkspace, "gallery", img.reEditDocId), {
-            updatedAt: new Date().toISOString(),
-            processedUrl: downloadUrl,
-            savedSettings: {
-              aspect: img.aspect || null,
-              crop: img.crop || null,
-              zoom: img.zoom || null,
-              naturalAspect: img.naturalAspect || null,
-              logos: img.logos || []
-            }
-          });
+          // Note: Removed Firestore gallery update to prevent database bloating
+          // since images expire in 3 days on ImgBB.
 
           await updateDoc(doc(db, "users", activeWorkspace), {
             lifetimeReEdits: increment(1)
@@ -87,31 +82,18 @@ export function ProcessingProvider({ children }) {
           );
           
           const finalName = newName.replace(/\.[^/.]+$/, "") + ".jpg";
-          const storageRef = ref(storage, `users/${activeWorkspace}/gallery/${finalName}`);
-          await uploadBytes(storageRef, processedBlob);
-          const downloadUrl = await getDownloadURL(storageRef);
+          const { url: downloadUrl } = await uploadToImgBB(processedBlob);
+
+          zip.file(finalName, processedBlob);
+          hasZipFiles = true;
 
           let originalDownloadUrl = downloadUrl;
           if (img.file) {
-            const origStorageRef = ref(storage, `users/${activeWorkspace}/gallery/orig-${newName}`);
-            await uploadBytes(origStorageRef, img.file);
-            originalDownloadUrl = await getDownloadURL(origStorageRef);
+            const { url: origUrl } = await uploadToImgBB(img.file);
+            originalDownloadUrl = origUrl;
           }
 
-          await addDoc(collection(db, "users", activeWorkspace, "gallery"), {
-            filename: finalName,
-            originalUrl: originalDownloadUrl,
-            processedUrl: downloadUrl,
-            createdAt: new Date().toISOString(),
-            status: "completed",
-            savedSettings: {
-              aspect: img.aspect || null,
-              crop: img.crop || null,
-              zoom: img.zoom || null,
-              naturalAspect: img.naturalAspect || null,
-              logos: img.logos || []
-            }
-          });
+          // Note: Removed Firestore gallery creation to prevent database bloating
 
           await updateDoc(doc(db, "users", activeWorkspace), {
             lifetimeUploads: increment(1),
@@ -126,9 +108,22 @@ export function ProcessingProvider({ children }) {
       }
     }
 
+    if (hasZipFiles) {
+      toast.loading("Generating ZIP file...", { id: "zip" });
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `RD_PostFlow_Edits_${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("Edits Downloaded!", { id: "zip" });
+    }
+
     localStorage.setItem("imageCounter", counter.toString());
     setIsProcessing(false);
-    toast.success("All edits saved to Cloud successfully!");
+    toast.success("Processing Complete!");
   };
 
   const progressPercent = totalItems > 0 ? Math.round((processedCount / totalItems) * 100) : 0;

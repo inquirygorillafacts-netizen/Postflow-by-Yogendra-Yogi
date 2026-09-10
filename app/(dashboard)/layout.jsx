@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { doc, updateDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { RetentionPopup } from "@/components/RetentionPopup";
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
@@ -121,6 +122,8 @@ export default function DashboardLayout({ children }) {
           </AnimatePresence>
         </ProcessingProvider>
       </div>
+
+      <RetentionPopup />
 
       {/* ID Modal */}
       {showIdModal && (

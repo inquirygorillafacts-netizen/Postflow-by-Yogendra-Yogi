@@ -2,8 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import localforage from "localforage";
-import { storage, db } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, deleteDoc, updateDoc, increment } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProcessing } from "@/contexts/ProcessingContext";
@@ -289,22 +288,21 @@ export default function BulkEditPage() {
     const toastId = toast.loading("Uploading logo...");
 
     try {
-      const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
       const { doc, updateDoc } = await import("firebase/firestore");
-      const { storage, db } = await import("@/lib/firebase");
+      const { db } = await import("@/lib/firebase");
+      const { uploadToImgBB } = await import("@/lib/imgbb");
 
       const extension = file.name.split('.').pop() || 'png';
       const fileName = `logo-${Date.now()}.${extension}`;
-      const storageRef = ref(storage, `users/${activeWorkspace}/logos/${fileName}`);
 
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const { url, deleteUrl } = await uploadToImgBB(file);
 
       const newLogo = {
         id: Date.now().toString(),
         name: file.name,
         url,
-        fileName
+        fileName,
+        deleteUrl
       };
 
       const updatedLogos = [...logos, newLogo];
