@@ -97,11 +97,9 @@ export function ProcessingProvider({ children }) {
           zip.file(finalName, processedBlob);
           hasZipFiles = true;
 
+          // Note: We skip uploading the original raw file to ImgBB to avoid 
+          // the 32MB limit and to significantly speed up the processing time.
           let originalDownloadUrl = downloadUrl;
-          if (img.file) {
-            const { url: origUrl } = await uploadToImgBB(img.file);
-            originalDownloadUrl = origUrl;
-          }
 
           // Save to Firestore so it appears in the gallery
           await addDoc(collection(db, "users", activeWorkspace, "gallery"), {
